@@ -80,7 +80,7 @@ Paths passed as arguments are scanned right away (also works with "Open with" in
 
 ### Building
 
-The AppImage is built by GitHub Actions (`.github/workflows/build.yml`) on Ubuntu 22.04: Tauri 2 builds the app, then the ClamAV engine (clamd + freshclam with their libraries) is added and the AppImage is repacked with zsync update info. Pushing a tag `vX.Y.Z` publishes a release.
+The AppImage is built by GitHub Actions (`.github/workflows/build.yml`) on Ubuntu 22.04: Tauri 2 builds the app, then the ClamAV engine (clamd + freshclam with their libraries) is added and the AppImage is repacked with zsync update info. A commit on `main` with a new version in `src-tauri/tauri.conf.json` and `[release]` in the commit message publishes that version as a release (pushing a tag `vX.Y.Z` works too).
 
 Local build (needs Rust, Node.js, the Tauri Linux dependencies and `clamav-daemon`):
 
@@ -156,7 +156,7 @@ Updates kommen danach direkt aus der App – kein manueller Download mehr nötig
 
 ### Bauen
 
-Die AppImage wird von GitHub Actions (`.github/workflows/build.yml`) auf Ubuntu 22.04 gebaut: Tauri 2 baut die App, danach wird die ClamAV-Engine (clamd + freshclam samt Bibliotheken) hinzugefügt und die AppImage mit zsync-Update-Info neu gepackt. Ein Tag `vX.Y.Z` veröffentlicht ein Release.
+Die AppImage wird von GitHub Actions (`.github/workflows/build.yml`) auf Ubuntu 22.04 gebaut: Tauri 2 baut die App, danach wird die ClamAV-Engine (clamd + freshclam samt Bibliotheken) hinzugefügt und die AppImage mit zsync-Update-Info neu gepackt. Ein Commit auf `main` mit neuer Version in `src-tauri/tauri.conf.json` und `[release]` in der Commit-Nachricht veröffentlicht diese Version als Release (ein Tag `vX.Y.Z` geht auch).
 
 Lokal bauen (benötigt Rust, Node.js, die Tauri-Linux-Abhängigkeiten und `clamav-daemon`):
 

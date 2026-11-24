@@ -99,7 +99,8 @@ cp "$DB"/* "$HOME_T/.local/share/lakuenfilescanner/signatures/"
 HOME="$HOME_T" XDG_RUNTIME_DIR="$XRT" APPIMAGE_EXTRACT_AND_RUN=1 LAKUEN_NO_UPDATE_CHECK=1 \
   xvfb-run -a timeout 60 ./LakuenFileScanner-x86_64.AppImage > "$RUN/app.log" 2>&1 &
 APP=$!
-python3 -I - "$XRT/lakuenfilescanner/clamd.sock" <<'PY'
+RC=0
+python3 -I - "$XRT/lakuenfilescanner/clamd.sock" <<'PY' || RC=$?
 import socket, sys, time, os
 sock = sys.argv[1]
 def cmd(c):
@@ -123,7 +124,6 @@ r = cmd(b"SCAN " + f.encode()); print(r)
 if not r.endswith("FOUND"): sys.exit("app clamd did not detect EICAR")
 print("::notice title=App E2E::App started headless, launched its own clamd (%.0fs), EICAR detected" % (time.time() - t0))
 PY
-RC=$?
 kill $APP 2>/dev/null || true
 echo "--- app log"; tail -20 "$RUN/app.log" || true
 echo "--- clamd conf written by the app"; cat "$XRT/lakuenfilescanner/clamd.conf" || true

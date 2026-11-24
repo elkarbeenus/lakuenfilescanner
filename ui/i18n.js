@@ -76,7 +76,7 @@ window.I18N = {
     s_preload: "Engine beim Start vorladen", s_preload_sub: "Scans starten sofort. Belegt ca. 1–1,5 GB RAM.",
     s_restart_engine: "Engine neu starten", s_log: "Protokoll",
     s_updates: "App-Updates", s_check_updates: "Beim Start nach Updates suchen", s_check_now: "Jetzt prüfen",
-    s_tutorial: "Einführung erneut anzeigen", s_data: "Datenordner",
+    s_tutorial: "Einführung erneut anzeigen", s_tutorial_btn: "Starten", s_data: "Datenordner",
     up_to_date: "Du hast die neueste Version ({v})", update_failed: "Update-Prüfung fehlgeschlagen: {msg}",
 
     upd_banner: "Version {v} ist verfügbar", upd_btn: "Jetzt aktualisieren", upd_notes: "Was ist neu?", upd_later: "Später",
@@ -93,7 +93,7 @@ window.I18N = {
     ob_next: "Weiter", ob_back: "Zurück", ob_skip: "Überspringen", ob_finish: "Los geht's",
     ob1_t: "Willkommen bei LakuenFileScanner", ob1_s: "Dein schneller Malware-Scanner für SteamOS. Prüfe einzelne Dateien oder ganze Ordner inklusive aller Unterordner – parallel auf allen CPU-Kernen.",
     ob2_t: "Virensignaturen", ob2_s: "Für die beste Erkennung lädt der Scanner einmalig die ClamAV-Signaturen (~110 MB). Danach aktualisieren sie sich automatisch einmal am Tag.",
-    ob2_done: "Signaturen sind bereit ✓",
+    ob2_done: "Signaturen sind bereit",
     ob3_t: "Nichts passiert ohne dich", ob3_s: "Funde werden nur gemeldet. Du entscheidest pro Datei: Quarantäne (wiederherstellbar), Löschen oder Ignorieren. Tipp: Zieh Dateien einfach ins Fenster.",
 
     err_busy: "Es läuft bereits ein Scan", err_no_targets: "Keine gültigen Ziele", confirm: "Bestätigen", close: "Schließen",
@@ -176,7 +176,7 @@ window.I18N = {
     s_preload: "Preload engine at start", s_preload_sub: "Scans start instantly. Uses about 1–1.5 GB RAM.",
     s_restart_engine: "Restart engine", s_log: "Log",
     s_updates: "App updates", s_check_updates: "Check for updates at start", s_check_now: "Check now",
-    s_tutorial: "Show introduction again", s_data: "Data folder",
+    s_tutorial: "Show introduction again", s_tutorial_btn: "Start", s_data: "Data folder",
     up_to_date: "You have the latest version ({v})", update_failed: "Update check failed: {msg}",
 
     upd_banner: "Version {v} is available", upd_btn: "Update now", upd_notes: "What's new?", upd_later: "Later",
@@ -193,7 +193,7 @@ window.I18N = {
     ob_next: "Next", ob_back: "Back", ob_skip: "Skip", ob_finish: "Let's go",
     ob1_t: "Welcome to LakuenFileScanner", ob1_s: "Your fast malware scanner for SteamOS. Check single files or whole folders including all subfolders – in parallel on all CPU cores.",
     ob2_t: "Virus signatures", ob2_s: "For the best detection the scanner downloads the ClamAV signatures once (~110 MB). After that they update automatically once a day.",
-    ob2_done: "Signatures are ready ✓",
+    ob2_done: "Signatures are ready",
     ob3_t: "Nothing happens without you", ob3_s: "Findings are only reported. You decide per file: quarantine (restorable), delete or ignore. Tip: just drop files onto the window.",
 
     err_busy: "A scan is already running", err_no_targets: "No valid targets", confirm: "Confirm", close: "Close",

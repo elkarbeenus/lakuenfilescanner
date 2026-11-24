@@ -51,6 +51,12 @@ function ago(ms) {
   if (d < 86400) return rtf.format(-Math.round(d / 3600), "hour");
   return rtf.format(-Math.round(d / 86400), "day");
 }
+const MON = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+function sigDate(s) {
+  const m = /(\w{3})\s+(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(\d{4})/.exec(s || "");
+  if (!m || MON[m[1]] === undefined) return s || "–";
+  return date(new Date(+m[6], MON[m[1]], +m[2], +m[3], +m[4]).getTime());
+}
 const base = (p) => String(p).split("/").filter(Boolean).pop() || p;
 const dir = (p) => { const a = String(p).split("/"); a.pop(); return a.join("/") || "/"; };
 
@@ -200,7 +206,7 @@ function bindTiles() {
 
 function vDashboard() {
   const e = S.engine || {}, v = engineView();
-  const sub = t("st_" + v.key + "_sub", { sig: e.signature_version || "–", date: e.signature_date || "–", msg: e.message || "" });
+  const sub = t("st_" + v.key + "_sub", { sig: e.signature_version || "–", date: sigDate(e.signature_date), msg: e.message || "" });
   let btns = "";
   if (v.key === "nodb") btns = `<button class="btn primary" data-x="sigs">${ic("download")}${t("btn_download_sigs")}</button>`;
   else if (v.key === "old" || v.key === "protected") btns = `<button class="btn" data-x="sigs">${ic("refresh")}${t("btn_update_sigs")}</button>`;
@@ -213,7 +219,7 @@ function vDashboard() {
       <div><h2>${t("st_" + v.key)}</h2><p>${esc(sub)}</p><div class="row">${btns}</div></div>
     </div>
     <div class="grid g4" style="margin-top:14px">
-      <div class="card stat"><span class="k">${t("card_signatures")}</span><span class="v">${e.signature_version ? num(e.signature_version) : "–"}</span><span class="s">${esc(e.signature_date || (e.db_size ? bytes(e.db_size) : "–"))}</span></div>
+      <div class="card stat"><span class="k">${t("card_signatures")}</span><span class="v">${e.signature_version ? num(e.signature_version) : "–"}</span><span class="s">${esc(e.signature_date ? sigDate(e.signature_date) : (e.db_size ? bytes(e.db_size) : "–"))}</span></div>
       <div class="card stat"><span class="k">${t("card_lastscan")}</span><span class="v">${last ? ago(last.finished) : t("never")}</span><span class="s">${last ? (last.findings.length ? t("findings_short", { n: last.findings.length }) : t("no_findings_short")) + " · " + num(last.files_scanned) + " " + t("m_files") : "&nbsp;"}</span></div>
       <div class="card stat"><span class="k">${t("card_quarantine")}</span><span class="v">${num(S.quarantine.length)}</span><span class="s">${t("items", { n: S.quarantine.length })}</span></div>
       <div class="card stat"><span class="k">${t("card_engine")}</span><span class="v">${esc((e.engine_version || "Lakuen").replace("ClamAV ", "ClamAV "))}</span><span class="s">${t("threads", { n: e.threads || S.info.cpus || "–" })}</span></div>
@@ -248,7 +254,7 @@ function vScan() {
       </div>
       <div class="metrics">
         ${[["files", "m_files"], ["data", "m_data"], ["speed", "m_speed"], ["rate", "m_rate"], ["find", "m_findings"], ["elapsed", "m_elapsed"], ["eta", "m_eta"], ["skip", "m_skipped"], ["err", "m_errors"], ["thr", "m_threads"]]
-          .map(([id, k]) => `<div class="metric" id="mm_${id}"><div class="k">${t(k)}</div><div class="v" id="m_${id}">–</div></div>`).join("")}
+          .map(([id, k]) => `<div class="metric" id="mm_${id}"><div class="k">${t(k)}</div><div class="v" id="m_${id}">–</div>${id === "files" ? `<div class="dim" style="font-size:12px" id="m_files_sub"></div>` : ""}</div>`).join("")}
       </div>
     </div>
     <h2 style="margin:22px 0 10px">${t("live_findings")}</h2>
@@ -261,7 +267,7 @@ bind.scan = () => {
 };
 const emptyLive = () => `<tr id="liveEmpty"><td colspan="3" class="muted" style="text-align:center;padding:22px">–</td></tr>`;
 const sevBadge = (s) => `<span class="sev ${esc(s)}">${ic(s === "suspicious" ? "alert" : "shield-alert")}${t("sev_" + s)}</span>`;
-const liveRow = (f) => `<tr><td>${sevBadge(f.severity)} <div class="sig" style="margin-top:4px">${esc(f.signature)}</div></td><td class="path"><div class="mono">${esc(base(f.path))}</div><small class="mono">${esc(dir(f.path))}</small></td><td>${bytes(f.size)}</td></tr>`;
+const liveRow = (f) => `<tr><td class="threat">${sevBadge(f.severity)} <div class="sig" style="margin-top:4px">${esc(f.signature)}</div></td><td class="path"><div class="mono">${esc(base(f.path))}</div><small class="mono">${esc(dir(f.path))}</small></td><td>${bytes(f.size)}</td></tr>`;
 
 function updateScanView() {
   const p = S.progress; if (!p || !$("#ring")) return;
@@ -281,14 +287,14 @@ function updateScanView() {
   $("#ringFg").style.strokeDashoffset = indet ? 326.7 * 0.75 : 326.7 * (1 - pct);
   $("#pct").textContent = indet ? "…" : `${Math.floor(pct * 100)}%`;
   $("#bar").style.width = `${pct * 100}%`;
-  $("#cur").textContent = p.running ? (p.current || " ") : "";
+  $("#cur").innerHTML = p.running && p.current ? `<span dir="ltr">${esc(p.current)}</span>` : "&nbsp;";
   let title = p.running ? (p.paused ? t("scan_paused") : t("scan_running")) : p.cancelled ? t("scan_cancelled") : t("scan_done");
   $("#scTitle").innerHTML = p.running ? `<span class="grad">${title}</span>` : title;
   $("#scSub").textContent = p.running && !p.walk_done ? t("scan_counting") : "";
   const remainB = p.bytes_total - p.bytes_done;
   const eta = p.running && p.walk_done && bps > 0 ? dur((remainB / bps) * 1000) : p.running ? "…" : "–";
   const set = (id, v) => { const el = $("#m_" + id); if (el) el.textContent = v; };
-  set("files", `${num(p.files_done)} / ${num(total)}`);
+  set("files", num(p.files_done)); { const el = $("#m_files_sub"); if (el) el.textContent = p.walk_done || !p.running ? `/ ${num(total)}` : `/ ${num(total)} …`; }
   set("data", `${bytes(p.bytes_done)}`);
   set("speed", p.running ? `${bytes(bps)}/s` : `${bytes(p.elapsed_ms ? p.bytes_done / (p.elapsed_ms / 1000) : 0)}/s`);
   set("rate", num(Math.round(p.running ? fps : p.elapsed_ms ? p.files_done / (p.elapsed_ms / 1000) : 0)));
@@ -350,7 +356,7 @@ function resRow(f) {
   const done = f.status !== "open";
   return `<tr class="${done ? "done" : ""}" data-id="${esc(f.id)}">
     <td><input type="checkbox" class="sel" ${S.sel.has(f.id) ? "checked" : ""} ${done ? "disabled" : ""}></td>
-    <td>${sevBadge(f.severity)}<div class="sig" style="margin-top:4px">${esc(f.signature)}</div><span class="tag">${f.engine === "clamav" ? "ClamAV" : "Lakuen"}</span></td>
+    <td class="threat">${sevBadge(f.severity)}<div class="sig" style="margin-top:4px">${esc(f.signature)}</div><span class="tag">${f.engine === "clamav" ? "ClamAV" : "Lakuen"}</span></td>
     <td class="path"><div class="mono" title="${esc(f.path)}">${esc(base(f.path))}</div><small class="mono" title="${esc(f.path)}">${esc(dir(f.path))}</small></td>
     <td>${bytes(f.size)}</td>
     <td><span class="tag">${t("status_" + f.status)}</span></td>
@@ -434,7 +440,7 @@ function vQuarantine() {
     ${q.length ? `<button class="btn danger" id="qAll">${ic("trash")}${t("q_delete_all")}</button>` : ""}</div>`;
   if (!q.length) return head + `<div class="card empty"><div class="big">${ic("box")}</div><h2>${t("q_empty")}</h2></div>`;
   return head + `<div class="tablewrap"><table><thead><tr><th>${t("col_threat")}</th><th>${t("col_path")}</th><th>${t("col_size")}</th><th>${t("q_date")}</th><th></th></tr></thead><tbody>
-    ${q.map((x) => `<tr data-id="${esc(x.id)}"><td>${sevBadge(x.severity)}<div class="sig" style="margin-top:4px">${esc(x.signature)}</div></td>
+    ${q.map((x) => `<tr data-id="${esc(x.id)}"><td class="threat">${sevBadge(x.severity)}<div class="sig" style="margin-top:4px">${esc(x.signature)}</div></td>
       <td class="path"><div class="mono" title="${esc(x.original_path)}">${esc(base(x.original_path))}</div><small class="mono">${esc(dir(x.original_path))}</small></td>
       <td>${bytes(x.size)}</td><td>${date(x.quarantined_at)}</td>
       <td class="actions"><button class="btn sm" data-a="restore">${ic("undo")}${t("q_restore")}</button>
@@ -508,7 +514,7 @@ function vSettings() {
       <div class="srow"><div class="l"><b>${t("s_language")}</b></div><select class="input" data-k="language"><option value="de" ${s.language === "de" ? "selected" : ""}>Deutsch</option><option value="en" ${s.language === "en" ? "selected" : ""}>English</option></select></div>
       <div class="srow" style="display:block"><div class="l" style="margin-bottom:10px"><b>${t("s_theme")}</b></div><div class="themes">${THEMES.map(([k, n, bg, a, b]) => `<button class="sw ${s.theme === k ? "on" : ""}" data-theme-k="${k}"><div style="background:linear-gradient(135deg, ${bg} 45%, ${a} 46%, ${b})"></div><span>${n}</span></button>`).join("")}</div></div>
       ${sw("notify_on_finish", t("s_notify"))}
-      <div class="srow"><div class="l"><b>${t("s_tutorial")}</b></div><button class="btn sm" id="bTut">${ic("play")}${t("s_tutorial")}</button></div>
+      <div class="srow"><div class="l"><b>${t("s_tutorial")}</b></div><button class="btn sm" id="bTut">${ic("play")}${t("s_tutorial_btn")}</button></div>
     </div>
     <div class="card sgroup"><h2>${ic("scan")}${t("s_scan")}</h2>
       <div class="srow"><div class="l"><b>${t("s_threads")}</b><span>${t("s_threads_sub")}</span></div><select class="input" data-k="threads" data-num>${thr}</select></div>
@@ -525,7 +531,7 @@ function vSettings() {
   <div>
     <div class="card sgroup"><h2>${ic("shield")}${t("s_engine")}</h2>
       <div class="kv" style="margin-bottom:12px"><span class="muted">${t("card_engine")}</span><span>${esc(e.engine_version || "–")} ${e.bundled ? '<span class="tag">AppImage</span>' : ""}</span>
-        <span class="muted">${t("card_signatures")}</span><span>${esc(e.signature_version || "–")} · ${esc(e.signature_date || "–")} ${e.db_size ? "· " + bytes(e.db_size) : ""}</span>
+        <span class="muted">${t("card_signatures")}</span><span>${esc(e.signature_version || "–")} · ${esc(sigDate(e.signature_date))} ${e.db_size ? "· " + bytes(e.db_size) : ""}</span>
         <span class="muted">Status</span><span>${esc(t("st_" + engineView().key))}</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <button class="btn sm primary" id="bSig" ${e.updating || !e.available ? "disabled" : ""}>${ic("refresh")}${t(e.db_present ? "btn_update_sigs" : "btn_download_sigs")}</button>

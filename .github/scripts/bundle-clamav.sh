@@ -45,14 +45,16 @@ cp /usr/share/doc/clamav/copyright "$D/share/COPYING-clamav" 2>/dev/null || true
 echo "::notice title=ClamAV bundle::$(LD_LIBRARY_PATH=$D/lib $D/bin/clamd --version) | $(ls $D/lib | wc -l) libs | certs: $(ls $D/certs 2>/dev/null | tr '\n' ' ') | size: $(du -sh $D | cut -f1)"
 echo "::notice title=clamd cert option::$(clamconf -g clamd.conf 2>/dev/null | grep -i -m3 cert | tr '\n' ' ')"
 
-# Repack with zsync update info
-wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-chmod +x appimagetool
-export ARCH=x86_64
-export APPIMAGE_EXTRACT_AND_RUN=1
-./appimagetool -u "gh-releases-zsync|elkarbeenus|lakuenfilescanner|latest|${NAME}.zsync" squashfs-root "$OUT/$NAME"
-[ -f "$NAME.zsync" ] && mv "$NAME.zsync" "$OUT/" || true
-[ -f "$OUT/$NAME.zsync" ] || ( cd "$OUT" && command -v zsyncmake >/dev/null && zsyncmake -u "$NAME" "$NAME" ) || true
+echo "::notice title=Largest bundled libs::$(du -h $D/lib/* | sort -rh | head -6 | tr '\n' ' ')"
+
+# Repack: keep the original AppImage runtime, rebuild the squashfs with the same compression.
+OFF=$(./in.AppImage --appimage-offset)
+head -c "$OFF" in.AppImage > runtime
+COMP=$(unsquashfs -s -o "$OFF" in.AppImage | awk '/^Compression/{print $2; exit}')
+COMP=${COMP:-gzip}
+echo "runtime offset $OFF, compression $COMP"
+mksquashfs squashfs-root fs.squashfs -root-owned -noappend -comp "$COMP" -quiet
+cat runtime fs.squashfs > "$OUT/$NAME"
 
 cd "$OUT"
 chmod +x "$NAME"

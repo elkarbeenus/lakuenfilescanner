@@ -242,7 +242,7 @@ impl Engine {
              DatabaseDirectory {db}\nTemporaryDirectory {tmp}\nPidFile {pid}\n\
              LogFile {log}\nLogFileMaxSize 5M\nLogTime yes\n\
              MaxThreads {threads}\nMaxQueue {queue}\nMaxConnectionQueueLength 256\n\
-             ReadTimeout 600\nCommandReadTimeout 30\nIdleTimeout 60\nSelfCheck 0\n\
+             ReadTimeout 600\nCommandReadTimeout 30\nIdleTimeout 60\nSelfCheck 3600\n\
              ConcurrentDatabaseReload no\nExitOnOOM no\n\
              MaxFileSize {max_file}M\nMaxScanSize {max_scan}M\nMaxRecursion 17\nMaxFiles 15000\n\
              ScanArchive {arch}\nDetectPUA {pua}\nAlertExceedsMax no\nBytecode yes\n",

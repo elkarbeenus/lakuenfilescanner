@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev \
-            patchelf file libfuse2 desktop-file-utils jq squashfs-tools \
+            patchelf file libfuse2 desktop-file-utils jq squashfs-tools xvfb xauth \
             clamav clamav-daemon clamav-freshclam
           sudo systemctl stop clamav-freshclam clamav-daemon 2>/dev/null || true
           echo "::notice title=ClamAV::$(/usr/sbin/clamd --version)"

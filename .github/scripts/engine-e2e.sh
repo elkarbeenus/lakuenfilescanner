@@ -89,4 +89,43 @@ for path, want in ((f, "FOUND"), (z, "FOUND"), (c, "OK")):
 print("::notice title=Engine E2E::EICAR + EICAR-in-ZIP detected, clean file OK (clamd ready in %.0fs)" % (time.time() - t0))
 PY
 kill $PID || true
+wait $PID 2>/dev/null || true
+
+# ---- 2) the real app: start headless, it must launch its own clamd
+export HOME_T=$(mktemp -d) XRT=$(mktemp -d)
+chmod 700 "$XRT"
+mkdir -p "$HOME_T/.local/share/lakuenfilescanner/signatures"
+cp "$DB"/* "$HOME_T/.local/share/lakuenfilescanner/signatures/"
+HOME="$HOME_T" XDG_RUNTIME_DIR="$XRT" APPIMAGE_EXTRACT_AND_RUN=1 LAKUEN_NO_UPDATE_CHECK=1 \
+  xvfb-run -a timeout 60 ./LakuenFileScanner-x86_64.AppImage > "$RUN/app.log" 2>&1 &
+APP=$!
+python3 -I - "$XRT/lakuenfilescanner/clamd.sock" <<'PY'
+import socket, sys, time, os
+sock = sys.argv[1]
+def cmd(c):
+    s = socket.socket(socket.AF_UNIX); s.settimeout(60); s.connect(sock)
+    s.sendall(b"z" + c + b"\0"); out = b""
+    while True:
+        d = s.recv(65536)
+        if not d: break
+        out += d
+    return out.rstrip(b"\0\n").decode()
+t0 = time.time()
+while True:
+    try:
+        if cmd(b"PING") == "PONG": break
+    except OSError: pass
+    if time.time() - t0 > 50: sys.exit("app did not start its clamd")
+    time.sleep(1)
+e = bytes(b ^ 0x5A for b in [2,111,21,123,10,127,26,27,10,1,110,6,10,0,2,111,110,114,10,4,115,109,25,25,115,109,39,126,31,19,25,27,8,119,9,14,27,20,30,27,8,30,119,27,20,14,19,12,19,8,15,9,119,14,31,9,14,119,28,19,22,31,123,126,18,113,18,112])
+f = "/tmp/lakuen-e2e-eicar.com"; open(f, "wb").write(e)
+r = cmd(b"SCAN " + f.encode()); print(r)
+if not r.endswith("FOUND"): sys.exit("app clamd did not detect EICAR")
+print("::notice title=App E2E::App started headless, launched its own clamd (%.0fs), EICAR detected" % (time.time() - t0))
+PY
+RC=$?
+kill $APP 2>/dev/null || true
+echo "--- app log"; tail -20 "$RUN/app.log" || true
+echo "--- clamd conf written by the app"; cat "$XRT/lakuenfilescanner/clamd.conf" || true
 rm -rf squashfs-root
+exit $RC

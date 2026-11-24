@@ -78,7 +78,9 @@ jobs:
         run: python3 .github/scripts/annotate.py test.log build.log
 
       - name: Bundle ClamAV engine into the AppImage
-        run: bash .github/scripts/bundle-clamav.sh
+        run: |
+          set -o pipefail
+          bash .github/scripts/bundle-clamav.sh 2>&1 | tee bundle.log
 
       - name: Smoke test bundled engine
         run: |
@@ -89,6 +91,15 @@ jobs:
           env -i PATH=/usr/bin:/bin LD_LIBRARY_PATH=$D/lib $D/bin/freshclam --version
           rm -rf squashfs-root
           ls -la
+
+      - name: Engine end-to-end test (freshclam + clamd + EICAR)
+        run: |
+          set -o pipefail
+          bash .github/scripts/engine-e2e.sh 2>&1 | tee e2e.log
+
+      - name: Report late errors
+        if: failure()
+        run: python3 .github/scripts/annotate.py bundle.log e2e.log
 
       - uses: actions/upload-artifact@v4
         with:

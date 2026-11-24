@@ -1,0 +1,111 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: System packages (Tauri + ClamAV)
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev \
+            patchelf file libfuse2 desktop-file-utils jq \
+            clamav clamav-daemon clamav-freshclam
+          sudo systemctl stop clamav-freshclam clamav-daemon 2>/dev/null || true
+          echo "::notice title=ClamAV::$(/usr/sbin/clamd --version)"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Version
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+            LABEL="$(python3 -c "import sys,re;v=sys.argv[1];m=re.match(r'(\d+\.\d+\.\d+)(?:-test\.(\d+))?',v);print('v'+m.group(1)+(' test '+m.group(2) if m.group(2) else ''))" "$V")"
+          else
+            BASE=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo v0.1.0)
+            V="${BASE#v}"
+            N=$(git rev-list --count "${BASE}..HEAD" 2>/dev/null || git rev-list --count HEAD)
+            LABEL="v${V%%-*} test ${N} ($(git rev-parse --short HEAD))"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "LAKUEN_VERSION_LABEL=$LABEL" >> "$GITHUB_ENV"
+          sed -i "0,/^version = .*/s//version = \"$V\"/" src-tauri/Cargo.toml
+          jq --arg v "$V" '.version=$v' src-tauri/tauri.conf.json > /tmp/t.json && mv /tmp/t.json src-tauri/tauri.conf.json
+          echo "::notice title=Version::$V ($LABEL)"
+
+      - name: Unit tests (updater versions, Lakuen rules)
+        run: |
+          set -o pipefail
+          for m in version heuristics; do
+            rustc --edition 2021 --test "src-tauri/src/$m.rs" -o "/tmp/t_$m" 2>&1 | tee -a test.log
+            "/tmp/t_$m" 2>&1 | tee -a test.log
+          done
+
+      - name: Build AppImage
+        run: |
+          set -o pipefail
+          npm install --no-audit --no-fund
+          npx tauri build --bundles appimage 2>&1 | tee build.log
+
+      - name: Report errors
+        if: failure()
+        run: python3 .github/scripts/annotate.py test.log build.log
+
+      - name: Bundle ClamAV engine into the AppImage
+        run: bash .github/scripts/bundle-clamav.sh
+
+      - name: Smoke test bundled engine
+        run: |
+          cd dist
+          ./LakuenFileScanner-x86_64.AppImage --appimage-extract >/dev/null
+          D=squashfs-root/usr/lib/lakuen-clamav
+          env -i PATH=/usr/bin:/bin LD_LIBRARY_PATH=$D/lib $D/bin/clamd --version
+          env -i PATH=/usr/bin:/bin LD_LIBRARY_PATH=$D/lib $D/bin/freshclam --version
+          rm -rf squashfs-root
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LakuenFileScanner-${{ steps.ver.outputs.version }}
+          path: dist/*
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LakuenFileScanner ${{ env.LAKUEN_VERSION_LABEL }}
+          body_path: RELEASE_NOTES.md
+          # Test builds are normal releases (marked "test" in title/notes) so the
+          # in-app updater (releases/latest) can reach them.
+          prerelease: false
+          make_latest: true
+          files: |
+            dist/LakuenFileScanner-x86_64.AppImage
+            dist/LakuenFileScanner-x86_64.AppImage.sha256
+            dist/LakuenFileScanner-x86_64.AppImage.zsync

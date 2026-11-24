@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LakuenFileScanner",
+  "mainBinaryName": "lakuenfilescanner",
+  "version": "0.1.0",
+  "identifier": "de.lakuen.filescanner",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "LakuenFileScanner",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 640,
+        "center": true,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage"],
+    "category": "Utility",
+    "shortDescription": "Fast malware scanner for files and folders",
+    "longDescription": "LakuenFileScanner scans files and whole folders (including subfolders) for malware using the ClamAV engine plus Lakuen rules. Created by Dominic Lesina x Claude.",
+    "copyright": "Dominic Lesina x Claude",
+    "publisher": "Dominic Lesina",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
+  }
+}

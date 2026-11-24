@@ -560,14 +560,8 @@ pub fn run(
 }
 
 pub fn quick_targets() -> Vec<String> {
-    let mut v = Vec::new();
-    let home = dirs::home_dir();
-    let mut add = |p: PathBuf| {
-        if p.exists() {
-            v.push(p.display().to_string());
-        }
-    };
-    if let Some(h) = &home {
+    let mut cands: Vec<PathBuf> = Vec::new();
+    if let Some(h) = dirs::home_dir() {
         for d in [
             "Downloads",
             "Desktop",
@@ -577,18 +571,22 @@ pub fn quick_targets() -> Vec<String> {
             ".local/share/applications",
             ".config/autostart",
         ] {
-            add(h.join(d));
+            cands.push(h.join(d));
         }
     }
     if let Some(d) = dirs::download_dir() {
-        if !v.contains(&d.display().to_string()) {
-            add(d);
-        }
+        cands.push(d);
     }
     for d in ["/tmp", "/var/tmp", "/dev/shm"] {
-        add(PathBuf::from(d));
+        cands.push(PathBuf::from(d));
     }
-    v.dedup();
+    let mut v: Vec<String> = Vec::new();
+    for p in cands {
+        let s = p.display().to_string();
+        if p.exists() && !v.contains(&s) {
+            v.push(s);
+        }
+    }
     v
 }
 
